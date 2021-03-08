@@ -1,0 +1,67 @@
+version: '3.8'
+volumes:
+    fundata:
+
+services:
+  service:
+    image: funlabs/funservice_dev
+    restart: always
+    ports:
+        - "9003:80"
+    volumes:
+        - $PWD:/go/src/github.com/Fiber-Man/$PROJECTNAME
+    environment:
+        - AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+        - AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY
+        - AWS_ENDPOINT=http://storage:9000
+        - AWS_BUCKET=funsystem
+        - AWS_MOUNTPOINT=/var/lib/funservice/plugins
+        - FUNSERVICE_DIR=/var/lib/funservice
+    security_opt:
+        - apparmor:unconfined
+    devices:
+        - /dev/fuse
+    cap_add:
+        - sys_admin
+    stdin_open: true
+    tty: true
+    working_dir: /go/src/github.com/Fiber-Man/$PROJECTNAME
+    command: funservice version
+    depends_on:
+        - db
+        - storage
+  storage:
+    image: minio/minio
+    restart: always
+    # ports:
+    #     - "127.0.0.1:9000:9000"
+    volumes:
+        - fundata:/data
+    environment:
+        - MINIO_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE
+        - MINIO_SECRET_KEY=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY
+    expose:
+        - "9000"
+    command: server /data
+  db:
+    image: mysql:8.0.21
+    restart: always
+    # ports:
+    #     - "127.0.0.1:3306:3306"
+    volumes:
+        - fundata:/var/lib/mysql
+    environment:
+        # - MYSQL_ROOT_HOST=%
+        - MYSQL_ROOT_PASSWORD=PeLZ8P1sJsCEITpXzxdprnBhRbo
+        - MYSQL_DATABASE=funservice
+        - MYSQL_USER=funroot
+        - MYSQL_PASSWORD=PeLZ8P1sJsCEITpXzxdprnBhRbo
+    security_opt:
+        - seccomp:unconfined
+    expose:
+        - "3306"
+    command:
+        --max_allowed_packet=128M
+        --default-authentication-plugin=mysql_native_password
+        --character-set-server=utf8mb4
+        --collation-server=utf8mb4_unicode_ci
