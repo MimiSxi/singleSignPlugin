@@ -2,10 +2,12 @@ package schema
 
 import (
 	"github.com/Fiber-Man/funplugin"
+	"github.com/Fiber-Man/singleSignPlugin/model"
 	"github.com/graphql-go/graphql"
 )
 
-//var templateSchema *funplugin.ObjectSchema
+var phoneLoginSchema *funplugin.ObjectSchema
+var medalSchema *funplugin.ObjectSchema
 
 var load = false
 
@@ -38,8 +40,11 @@ var mutationFields = graphql.Fields{
 func NewPlugSchema(pls funplugin.PluginManger) funplugin.Schema {
 	if load != true {
 
-		//templateSchema, _ = pls.NewSchemaBuilder(model.Template{})
-		//marge(templateSchema)
+		phoneLoginSchema, _ = pls.NewSchemaBuilder(model.UserInfo{})
+		marge(phoneLoginSchema)
+
+		medalSchema, _ = pls.NewSchemaBuilder(model.Medal{})
+		marge(medalSchema)
 
 		load = true
 	}
@@ -54,7 +59,8 @@ func NewPlugSchema(pls funplugin.PluginManger) funplugin.Schema {
 		Object: map[string]*graphql.Object{
 			// "account": accountType,
 
-			//"template":      templateSchema.GraphQLType,
+			"phoneLogin": phoneLoginSchema.GraphQLType,
+			"medal":      medalSchema.GraphQLType,
 
 			// "role":        roleSchema.GraphQLType,
 			// "roleaccount": roleAccountSchema.GraphQLType,
