@@ -37,6 +37,7 @@ func NewDB(gdb *gorm.DB) (err error) {
 	db = gdb
 	db.LogMode(true)
 	db.SetLogger(&Logger{logrus.StandardLogger()})
+	db.DropTable(&UserInfo{})
 	db.AutoMigrate(&UserInfo{})
 	db.AutoMigrate(&Medal{})
 	return nil
