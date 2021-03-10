@@ -16,7 +16,7 @@ type UserInfo struct {
 	ID           uint      `gorm:"primary_key" gqlschema:";query!;querys" description:"id"`
 	GeoShow      string    `json:"geo_show" gorm:"DEFAULT:0;NOT NULL;" gqlschema:"querys" description:""`
 	Etime        string    `json:"etime" gorm:"DEFAULT:0;NOT NULL;" gqlschema:"querys" description:""`
-	UserId       string    `json:"user_id" gorm:"primary_key;" gqlschema:"query" description:"用户id"`
+	UserId       string    `json:"user_id" gorm:"UNIQUE" gqlschema:"query" description:"用户id"`
 	IsVip        string    `json:"is_vip" gorm:"DEFAULT:0;NOT NULL;" gqlschema:"querys" description:"是否会员"`
 	UserNick     string    `json:"user_nick" gorm:"Type:varchar(255);DEFAULT:'';NOT NULL;" gqlschema:"querys" description:"用户昵称"`
 	UserIcon     string    `json:"user_icon" gorm:"Type:varchar(255);DEFAULT:'';NOT NULL;" gqlschema:"querys" description:"用户头像"`
@@ -39,29 +39,6 @@ type UserInfo struct {
 	DeletedAt    *time.Time
 	v2           int    `gorm:"-" exclude:"true"`
 	Code         string `gorm:"-" exclude:"true" gqlschema:"register!;login!" description:"验证码"`
-}
-
-type User struct {
-	GeoShow      string `json:"geo_show"`
-	Etime        string `json:"etime"`
-	UserID       string `json:"user_id"`
-	IsVip        string `json:"is_vip"`
-	UserNick     string `json:"user_nick"`
-	UserIcon     string `json:"user_icon"`
-	UserTel      string `json:"user_tel"`
-	ParkID       string `json:"park_id"`
-	VolunteerSex string `json:"volunteer_sex"`
-	RedPacket    string `json:"red_packet"`
-	Pid          string `json:"pid"`
-	IsShowMoney  string `json:"is_show_money"`
-	Total        string `json:"total_"`
-	Wxacode      string `json:"wxacode"`
-	IsWork       string `json:"is_work"`
-	Stime        string `json:"stime"`
-	Stype        string `json:"stype"`
-	Ltime        string `json:"ltime"`
-	LabelID      string `json:"label_id"`
-	UserPwd      string `json:"user_pwd"`
 }
 
 type UserInfos struct {
@@ -96,7 +73,7 @@ func (o UserInfo) Sendletter(params graphql.ResolveParams) (UserInfo, error) {
 		"application/x-www-form-urlencoded",
 		strings.NewReader("tel_="+o.UserIel+"&token=b5afc7b7a1d16e58a0d1983154c58e4c&country=86"))
 	if err != nil {
-		fmt.Println(err)
+		return o, errors.New("http.Post error")
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -120,7 +97,7 @@ func (o UserInfo) Register(params graphql.ResolveParams) (UserInfo, error) {
 		"application/x-www-form-urlencoded",
 		strings.NewReader("tel_="+o.UserIel+"&token=b5afc7b7a1d16e58a0d1983154c58e4c&code="+o.Code))
 	if err != nil {
-		fmt.Println(err)
+		return o, errors.New("http.Post error")
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -134,11 +111,9 @@ func (o UserInfo) Register(params graphql.ResolveParams) (UserInfo, error) {
 		return o, errors.New(msg.String())
 	}
 	data := gjson.Get(string(v), "data.user")
-	fmt.Println(data)
 	if err := json.Unmarshal([]byte(data.String()), &o); err != nil {
 		panic(err)
 	}
-	// todo 重复入库
 	err = db.Create(&o).Error
 	if err != nil {
 		fmt.Println(err)
@@ -154,7 +129,7 @@ func (o UserInfo) Login(params graphql.ResolveParams) (UserInfo, error) {
 		"application/x-www-form-urlencoded",
 		strings.NewReader("tel_="+o.UserIel+"&token=b5afc7b7a1d16e58a0d1983154c58e4c&code="+o.Code))
 	if err != nil {
-		fmt.Println(err)
+		return o, errors.New("http.Post error")
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -168,13 +143,14 @@ func (o UserInfo) Login(params graphql.ResolveParams) (UserInfo, error) {
 		return o, errors.New(msg.String())
 	}
 	data := gjson.Get(string(v), "data.user")
-	fmt.Println(data)
 	if err := json.Unmarshal([]byte(data.String()), &o); err != nil {
 		panic(err)
 	}
-	err = db.Create(&o).Error
-	if err != nil {
-		fmt.Println(err)
+	if err := db.Where("user_id = ?", o.UserId).First(&UserInfo{}).Updates(&o).Error; err != nil {
+		err = db.Create(&o).Error
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 	return o, nil
 }
