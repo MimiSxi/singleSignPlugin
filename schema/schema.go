@@ -8,6 +8,7 @@ import (
 
 var phoneLoginSchema *funplugin.ObjectSchema
 var medalSchema *funplugin.ObjectSchema
+var qqloginSchema *funplugin.ObjectSchema
 
 var load = false
 
@@ -46,6 +47,9 @@ func NewPlugSchema(pls funplugin.PluginManger) funplugin.Schema {
 		medalSchema, _ = pls.NewSchemaBuilder(model.Medal{})
 		marge(medalSchema)
 
+		qqloginSchema, _ = pls.NewSchemaBuilder(model.QQLoginInfo{})
+		marge(qqloginSchema)
+
 		load = true
 	}
 
@@ -61,6 +65,7 @@ func NewPlugSchema(pls funplugin.PluginManger) funplugin.Schema {
 
 			"phoneLogin": phoneLoginSchema.GraphQLType,
 			"medal":      medalSchema.GraphQLType,
+			"qqlogin":    qqloginSchema.GraphQLType,
 
 			// "role":        roleSchema.GraphQLType,
 			// "roleaccount": roleAccountSchema.GraphQLType,

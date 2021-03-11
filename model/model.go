@@ -39,6 +39,7 @@ func NewDB(gdb *gorm.DB) (err error) {
 	db.SetLogger(&Logger{logrus.StandardLogger()})
 	db.AutoMigrate(&UserInfo{})
 	db.AutoMigrate(&Medal{})
+	db.AutoMigrate(&QQLoginInfo{})
 	return nil
 }
 
