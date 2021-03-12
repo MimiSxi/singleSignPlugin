@@ -1,6 +1,7 @@
 package model
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -69,11 +70,15 @@ func (o Medal) Getmedallist(params graphql.ResolveParams) (Medal, error) {
 	p := params.Args
 	o.Confirm = p["confirm"].(bool)
 	if o.Confirm != false {
-		resp, err := http.Post("https://www.zmlxj.com/app.php/Medal/ajax_get_medal_list",
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+		resp, err := client.Post("https://www.zmlxj.com/app.php/Medal/ajax_get_medal_list",
 			"application/x-www-form-urlencoded",
 			strings.NewReader("token=b5afc7b7a1d16e58a0d1983154c58e4c"))
 		if err != nil {
-			return o, errors.New("http.Post error")
+			return o, errors.New(err.Error())
 		}
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
@@ -104,11 +109,15 @@ func (o Medal) Getmedallist(params graphql.ResolveParams) (Medal, error) {
 //检查勋章获取记录
 func (o Medal) Checkcertrecord(params graphql.ResolveParams) (Medal, error) {
 	p := params.Args
-	resp, err := http.Post("https://www.zmlxj.com/app.php/Medal/ajax_get_check_cert_record",
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Post("https://www.zmlxj.com/app.php/Medal/ajax_get_check_cert_record",
 		"application/x-www-form-urlencoded",
 		strings.NewReader("id="+p["medalid"].(string)+"&token=b5afc7b7a1d16e58a0d1983154c58e4c&user_id="+p["userid"].(string)))
 	if err != nil {
-		return o, errors.New("http.Post error")
+		return o, errors.New(err.Error())
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)

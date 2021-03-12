@@ -1,6 +1,7 @@
 package model
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -69,11 +70,15 @@ func (o UserInfo) Querys(params graphql.ResolveParams) (UserInfos, error) {
 func (o UserInfo) Sendletter(params graphql.ResolveParams) (UserInfo, error) {
 	p := params.Args
 	o.UserIel = p["userIel"].(string)
-	resp, err := http.Post("https://www.zmlxj.com/app.php/Login/send_letter",
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Post("https://www.zmlxj.com/app.php/Login/send_letter",
 		"application/x-www-form-urlencoded",
 		strings.NewReader("tel_="+o.UserIel+"&token=b5afc7b7a1d16e58a0d1983154c58e4c&country=86"))
 	if err != nil {
-		return o, errors.New("http.Post error")
+		return o, errors.New(err.Error())
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -93,11 +98,15 @@ func (o UserInfo) Register(params graphql.ResolveParams) (UserInfo, error) {
 	p := params.Args
 	o.UserIel = p["userIel"].(string)
 	o.Code = p["code"].(string)
-	resp, err := http.Post("https://www.zmlxj.com/app.php/Login/register",
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Post("https://www.zmlxj.com/app.php/Login/register",
 		"application/x-www-form-urlencoded",
 		strings.NewReader("tel_="+o.UserIel+"&token=b5afc7b7a1d16e58a0d1983154c58e4c&code="+o.Code))
 	if err != nil {
-		return o, errors.New("http.Post error")
+		return o, errors.New(err.Error())
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -125,11 +134,15 @@ func (o UserInfo) Login(params graphql.ResolveParams) (UserInfo, error) {
 	p := params.Args
 	o.UserIel = p["userIel"].(string)
 	o.Code = p["code"].(string)
-	resp, err := http.Post("https://www.zmlxj.com/app.php/Login/login",
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Post("https://www.zmlxj.com/app.php/Login/login",
 		"application/x-www-form-urlencoded",
 		strings.NewReader("tel_="+o.UserIel+"&token=b5afc7b7a1d16e58a0d1983154c58e4c&code="+o.Code))
 	if err != nil {
-		return o, errors.New("http.Post error")
+		return o, errors.New(err.Error())
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
