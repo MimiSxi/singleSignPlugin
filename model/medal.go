@@ -16,15 +16,17 @@ import (
 
 // 勋章
 type Medal struct {
-	ID        string    `json:"id" gorm:"primary_key" gqlschema:"query!;querys" description:"勋章id"`
+	ID        string    `json:"id" gorm:"primary_key" gqlschema:"query!;querys;checkcertrecord!" description:"勋章id"`
 	Title     string    `json:"title" gorm:"Type:varchar(255);DEFAULT:'';NOT NULL;" gqlschema:"querys" description:"勋章名称"`
+	Cert      string    `json:"cert_" gorm:"Type:varchar(255);DEFAULT:'';NOT NULL;" gqlschema:"querys" description:"证书标题"`
+	NewURL    string    `json:"newUrl" gorm:"Type:varchar(1000);DEFAULT:'';NOT NULL;" gqlschema:"querys" description:"图片url"`
 	CreatedAt time.Time `description:"创建时间" gqlschema:"querys"`
 	UpdatedAt time.Time `description:"更新时间" gqlschema:"querys"`
 	DeletedAt *time.Time
 	v2        int    `gorm:"-" exclude:"true"`
 	Confirm   bool   `gorm:"-" exclude:"true" gqlschema:"getmedallist!" description:"确认1是0否"`
 	Userid    string `gorm:"-" exclude:"true" gqlschema:"checkcertrecord!" description:"用户ID"`
-	Medalid   string `gorm:"-" exclude:"true" gqlschema:"checkcertrecord!" description:"勋章ID"`
+	//Medalid   string `gorm:"-" exclude:"true" gqlschema:"checkcertrecord!" description:"勋章ID"`
 }
 
 type Medals struct {
@@ -106,8 +108,12 @@ func (o Medal) Getmedallist(params graphql.ResolveParams) (Medal, error) {
 	return o, nil
 }
 
-//检查勋章获取记录
+//查看证书
 func (o Medal) Checkcertrecord(params graphql.ResolveParams) (Medal, error) {
+	s, ok := params.Source.(Medal)
+	if !ok {
+		return o, errors.New("Checkcertrecord param")
+	}
 	p := params.Args
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -115,7 +121,7 @@ func (o Medal) Checkcertrecord(params graphql.ResolveParams) (Medal, error) {
 	client := &http.Client{Transport: tr}
 	resp, err := client.Post("https://www.zmlxj.com/app.php/Medal/ajax_get_check_cert_record",
 		"application/x-www-form-urlencoded",
-		strings.NewReader("id="+p["medalid"].(string)+"&token=b5afc7b7a1d16e58a0d1983154c58e4c&user_id="+p["userid"].(string)))
+		strings.NewReader("id="+s.ID+"&token=b5afc7b7a1d16e58a0d1983154c58e4c&user_id="+p["userid"].(string)))
 	if err != nil {
 		return o, errors.New(err.Error())
 	}
@@ -125,10 +131,13 @@ func (o Medal) Checkcertrecord(params graphql.ResolveParams) (Medal, error) {
 		return o, err
 	}
 	v, _ := UnescapeUnicode(body)
+	id := gjson.Get(string(v), "id")
 	msg := gjson.Get(string(v), "msg")
-	data := gjson.Get(string(v), "data")
-	fmt.Println(v)
-	fmt.Println(msg)
-	fmt.Println(data)
-	return o, nil
+	if id.Int() != 0 {
+		return o, errors.New(msg.String())
+	}
+	s.Cert = gjson.Get(string(v), "data.data.cert_").String()
+	s.NewURL = gjson.Get(string(v), "data.data.newUrl").String()
+	err = db.Save(&s).Error
+	return s, err
 }
